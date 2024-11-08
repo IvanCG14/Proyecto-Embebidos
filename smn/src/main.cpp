@@ -1,5 +1,7 @@
 #include "Arduino.h"
 #include "pitches.h"
+//#include "DFRobotDFPlayerMini.h"
+//#include "SoftwareSerial.h"
 
 /* Define pin numbers for LEDs, buttons and speaker: */
 int ledPins[] = {13, 12, 26, 27};
@@ -12,9 +14,18 @@ const int gameTones[] = { NOTE_G3, NOTE_C4, NOTE_E4, NOTE_G5};
 int gameSequence[MAX_GAME_LENGTH] = {0};
 int gameIndex = 0;
 int modo = 0;
+//SoftwareSerial serial(25,32);
+//DFRobotDFPlayerMini myDFPlayer;
 
 void setup(){
+  /*
   Serial.begin(9600);
+  Serial.begin(9600);
+  myDFPlayer.begin(Serial1);
+  delay(2000);
+  myDFPlayer.volume(20);
+  myDFPlayer.EQ(DFPLAYER_EQ_JAZZ);
+  myDFPlayer.outputDevice(DFPLAYER_DEVICE_SD);*/
   for (byte i = 0; i < 4; i++) {
     pinMode(ledPins[i], OUTPUT);
     pinMode(buttonPins[i], INPUT_PULLUP);
@@ -28,13 +39,17 @@ void setup(){
 
   pinMode(SPEAKER_PIN, OUTPUT);
   randomSeed(analogRead(A3));
+
+
 }
 
 void lightLedAndPlayTone(byte ledIndex) {
   digitalWrite(ledPins[ledIndex], HIGH);
+  //myDFPlayer.playFolder(1,ledIndex);
   tone(SPEAKER_PIN, gameTones[ledIndex]);
   delay(300);
   digitalWrite(ledPins[ledIndex], LOW);
+ // myDFPlayer.stop();
   noTone(SPEAKER_PIN);
 }
 
@@ -147,7 +162,7 @@ void win() {
 }
 
 int selMode(){ //seleccionar el modo de juego
-  Serial.print("Seleccione un modo de juego:\n1. Niveles\n2. Reto\n 3. Adivinanza\n");
+  Serial.print("\nSeleccione un modo de juego:\n1. Niveles\n2. Reto\n3. Adivinanza\n");
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
       return 1;
@@ -159,7 +174,7 @@ int selMode(){ //seleccionar el modo de juego
   }
 }
 
-int salir(){
+void salir(){
   Serial.print("¿Desea volver a intentarlo?:\n1. Seguir\n2. Salir\n");
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
@@ -174,10 +189,12 @@ int salir(){
 void loop(){
   if (modo == 0){
     modo = selMode();
+    delay(3000);
   }
 
   // Add a random color to the end of the sequence
   if(modo==1){
+    Serial.print("\nNiveles de Secuencia\n");
     gameSequence[gameIndex] = random(0, 4);
     gameIndex++;
     if (gameIndex >= MAX_GAME_LENGTH) {
@@ -198,6 +215,7 @@ void loop(){
     }
 
   } else if (modo == 2){ //Segundo modo
+    Serial.print("\nModo Reto\n");
     gameIndex = 7;
     for (int i = 0; i < gameIndex; i++) {
       gameSequence[i] = random(0, 4);
