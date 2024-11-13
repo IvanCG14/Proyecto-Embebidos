@@ -10,6 +10,11 @@ int buttonPins[] = {17, 18, 33, 34};
 
 const int SPEAKER_PIN = 5;
 const int gameTones[] = { NOTE_G3, NOTE_C4, NOTE_E4, NOTE_G5};
+const char* opcMalas[] = {
+  "Bob Esponja", "Los Simpsons", "Avatar: La Leyenda de Aang", "Rick and Morty",
+  "Teen Titans Go!", "Adventure Time (Hora de Aventura)", "The Owl House",
+  "Phineas y Ferb"};
+const char* opcCorrectas[] = {"The Office", "Gravity Falls","Los Padrinos Mágicos"};
 
 int gameSequence[MAX_GAME_LENGTH] = {0};
 int gameIndex = 0;
@@ -141,7 +146,8 @@ void playLevelUpSound() {
   noTone(SPEAKER_PIN);
 }
 
-void win() {
+void victoria(char* mensaje) {
+  Serial.print(mensaje);
   tone(SPEAKER_PIN, NOTE_C4);
   delay(250);
   tone(SPEAKER_PIN, NOTE_G3);
@@ -174,6 +180,21 @@ int selMode(){ //seleccionar el modo de juego
   }
 }
 
+int difficulty(){ //seleccionar dificultad
+  Serial.print("\nSeleccione una dificultad:\n1. Fácil\n2. Regular\n3. Difícil\n4. Imposible\n");
+  while(1){
+    if(digitalRead(buttonPins[0])==LOW){
+      return 1500;
+    } else if(digitalRead(buttonPins[1])==LOW){
+      return 500;
+    } else if(digitalRead(buttonPins[2])==LOW){
+      return 100;
+    } else if(digitalRead(buttonPins[3])==LOW){
+      return 10;
+    }
+  }
+}
+
 void salir(){
   Serial.print("¿Desea volver a intentarlo?:\n1. Seguir\n2. Salir\n");
   while(1){
@@ -186,22 +207,93 @@ void salir(){
   }
 }
 
+int mostrarOpcion(int cancion, int opcion){
+  int a, b, c, d = 100;
+
+  if (opcion==0){
+    Serial.print("1. ");
+    Serial.print(opcCorrectas[cancion]);
+  } else {
+    a = random(0,8);
+    Serial.print("1. ");
+    Serial.print(opcMalas[a]);
+  } 
+  
+  if (opcion==1){
+    Serial.print("2. ");
+    Serial.print(opcCorrectas[cancion]);
+  } else{
+    while (a==b || b==100){
+      b = random(0,8);
+    }
+    Serial.println("2. ");
+    Serial.print(opcMalas[b]);
+  } 
+  
+  if (opcion==2){
+    Serial.println("3. ");
+    Serial.print(opcCorrectas[cancion]);
+  } else{
+    while (c==b || c==100){
+      c = random(0,8);
+    }
+    Serial.println("3. ");
+    Serial.print(opcMalas[c]);
+  } 
+  
+  if (opcion==3){
+    Serial.println("4. ");
+    Serial.print(opcCorrectas[cancion]);
+  } else{
+    while (c==d || d==100){
+      d = random(0,8);
+    }
+    Serial.println("4. ");
+    Serial.print(opcMalas[d]);
+  } 
+
+  while(1){
+    if(digitalRead(buttonPins[0])==LOW){
+      return 0;
+    } else if(digitalRead(buttonPins[1])==LOW){
+      return 1;
+    } else if(digitalRead(buttonPins[2])==LOW){
+      return 2;
+    } else if(digitalRead(buttonPins[3])==LOW){
+      return 3;
+    }
+  }
+
+}
+
+bool elegirCancion(int cancion){
+  //playFolder(3, (cancion + 1));
+  //delay(10000);
+  Serial.print("\n¿Cual cancion es?:\n");
+  int opcion = random(0, 4);
+  int respuesta = mostrarOpcion(cancion, opcion);
+
+  return (opcion == respuesta);
+}
+
 void loop(){
   if (modo == 0){
     modo = selMode();
-    delay(3000);
+    delay(300);
   }
 
   // Add a random color to the end of the sequence
   if(modo==1){
     Serial.print("\nNiveles de Secuencia\n");
+    delay(3000);
     gameSequence[gameIndex] = random(0, 4);
     gameIndex++;
     if (gameIndex >= MAX_GAME_LENGTH) {
       gameIndex = MAX_GAME_LENGTH - 1;
     }
 
-    playSequence(50);
+    int dif = difficulty();
+    playSequence(dif);
     if (!checkUserSequence()) {
       gameOver("Game over! your score: ");
       salir();
@@ -216,20 +308,31 @@ void loop(){
 
   } else if (modo == 2){ //Segundo modo
     Serial.print("\nModo Reto\n");
+    delay(3000);
     gameIndex = 7;
     for (int i = 0; i < gameIndex; i++) {
       gameSequence[i] = random(0, 4);
     }
 
-    playSequence(500);
+    int dif = difficulty();
+    playSequence(dif);
     if (!checkUserSequence()) {
       gameOver("Game over, good luck in your next attempt!");
     } else {
-      win();
+      victoria("¡FELICIDADES HAS GANADO!");
     }
     salir();
   } else if (modo == 3){
+    Serial.print("\nModo de Adivinanzas\n");
+    delay(3000);
 
+    int cancion = random(0, 3);
+    if (elegirCancion(cancion)){
+      victoria("¡FELICIDADES HAS ACERTADO!");
+    } else {
+      gameOver("Opción equivocada :(");
+    }
+    salir();
   }
 
 }
