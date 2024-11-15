@@ -98,14 +98,14 @@ byte readButtons() {
 }
 
 void gameOver(char* mensaje, bool cond) {
+  delay(1000);
+  myDFPlayer.playFolder(2,1);
+  delay(200);
   Serial.print(mensaje);
   if(cond){
     Serial.println(gameIndex - 1);}
   gameIndex = 0;
-  delay(200);
-
-  myDFPlayer.playFolder(2,1);
-  delay(1100);
+  delay(1000);
   myDFPlayer.stop();
   delay(500);
 }
@@ -158,7 +158,7 @@ int difficulty(){ //seleccionar dificultad
     } else if(digitalRead(buttonPins[1])==LOW){
       return 800;
     } else if(digitalRead(buttonPins[2])==LOW){
-      return 300;
+      return 500;
     }
     delay(1);
   }
@@ -310,13 +310,13 @@ void loop(){
     salir();
   } else if (modo == 3){
     Serial.print("\nModo de Adivinanzas\n");
-    delay(3000);
+    delay(300);
 
     int cancion = random(0, 3);
     if (elegirCancion(cancion)){
-      victoria("¡FELICIDADES HAS ACERTADO!");
+      victoria("\n¡FELICIDADES HAS ACERTADO!\n");
     } else {
-      gameOver("Opción equivocada :(", 0);
+      gameOver("\nOpción equivocada :(\n", 0);
     }
     salir();
   }

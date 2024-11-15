@@ -155,7 +155,7 @@ void loopAP()
 void intentoconexion(const char *apname, const char *appassword)
 {
 
-    Serial.begin(115200);
+    Serial.begin(9600);
     EEPROM.begin(512);
     Serial.println("ingreso a intentoconexion");
     if (!lastRed())
