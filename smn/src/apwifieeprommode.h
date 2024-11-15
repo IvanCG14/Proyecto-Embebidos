@@ -134,7 +134,7 @@ bool lastRed()
 
 void initAP(const char *apSsid, const char *apPassword)
 { // Nombre de la red Wi-Fi y  Contraseña creada por el ESP32
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apSsid, apPassword);

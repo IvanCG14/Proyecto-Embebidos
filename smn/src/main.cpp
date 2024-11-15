@@ -2,14 +2,14 @@
 #include "pitches.h"
 #include "DFRobotDFPlayerMini.h"
 #include <HardwareSerial.h>
+#include "apwifieeprommode.h"
+#include <EEPROM.h>
 
 /* Define pin numbers for LEDs, buttons and speaker: */
 int ledPins[] = {13, 12, 26, 27};
-int buttonPins[] = {17, 18, 33, 34};
+int buttonPins[] = {5, 18, 33, 34};
 #define MAX_GAME_LENGTH 100
 
-const int SPEAKER_PIN = 5;
-const int gameTones[] = { NOTE_G3, NOTE_C4, NOTE_E4, NOTE_G5};
 const char* opcMalas[] = {
   "Bob Esponja", "Los Simpsons", "Avatar: La Leyenda de Aang", "Rick and Morty",
   "Teen Titans Go!", "Adventure Time (Hora de Aventura)", "The Owl House",
@@ -28,16 +28,18 @@ DFRobotDFPlayerMini myDFPlayer;
 void setup(){
   Serial.begin(9600);
 
+  intentoconexion("SimonDice", "simondice");
+
   for (byte i = 0; i < 4; i++) {
     pinMode(ledPins[i], OUTPUT);
     pinMode(buttonPins[i], INPUT_PULLUP);
   }
-  pinMode(2,OUTPUT);
-  digitalWrite(2,HIGH);
+  pinMode(15,OUTPUT);
+  digitalWrite(15,HIGH);
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
-  pinMode(16,OUTPUT);
-  digitalWrite(16,HIGH);
+  pinMode(19,OUTPUT);
+  digitalWrite(19,HIGH);
 
   // Inicia la comunicación UART con el DFPlayer Mini
   mySerial.begin(9600, SERIAL_8N1, 16, 17); // UART1: RX en GPIO16, TX en GPIO17
@@ -45,28 +47,27 @@ void setup(){
   // Espera a que el DFPlayer se inicie
   Serial.println("Iniciando DFPlayer Mini...");
   
-  if (!myDFPlayer.begin(mySerial)) {
+  while (!myDFPlayer.begin(mySerial)) {
     Serial.println("¡No se pudo encontrar el DFPlayer Mini!");
-    while (true);  // Detener el programa si no se encuentra el DFPlayer
+    delay(1000);
+    //while (true);  // Detener el programa si no se encuentra el DFPlayer
   }
   
   Serial.println("DFPlayer Mini listo!");
 
   // Ajusta el volumen del DFPlayer (0 a 30, 30 es el volumen máximo)
-  myDFPlayer.volume(20);  // Ajuste de volumen
+  myDFPlayer.volume(30);  // Ajuste de volumen
 
-  pinMode(SPEAKER_PIN, OUTPUT);
   randomSeed(analogRead(A3));
 }
 
 void lightLedAndPlayTone(byte ledIndex, int t) {
-  digitalWrite(ledPins[ledIndex], HIGH);
   myDFPlayer.playFolder(1,(ledIndex+1));
-  //tone(SPEAKER_PIN, gameTones[ledIndex]);
+  delay(500);
+  digitalWrite(ledPins[ledIndex], HIGH);
   delay(t);
   digitalWrite(ledPins[ledIndex], LOW);
   myDFPlayer.stop();
-  //noTone(SPEAKER_PIN);
 }
 
 /**
@@ -96,9 +97,6 @@ byte readButtons() {
   }
 }
 
-/**
-  Play the game over sequence, and report the game score
-*/
 void gameOver(char* mensaje, bool cond) {
   Serial.print(mensaje);
   if(cond){
@@ -109,26 +107,9 @@ void gameOver(char* mensaje, bool cond) {
   myDFPlayer.playFolder(2,1);
   delay(1100);
   myDFPlayer.stop();
-  /* Play a Wah-Wah-Wah-Wah sound
-  tone(SPEAKER_PIN, NOTE_DS5);
-  delay(300);
-  tone(SPEAKER_PIN, NOTE_D5);
-  delay(300);
-  tone(SPEAKER_PIN, NOTE_CS5);
-  delay(300);
-  for (byte i = 0; i < 10; i++) {
-    for (int pitch = -10; pitch <= 10; pitch++) {
-      tone(SPEAKER_PIN, NOTE_C5 + pitch);
-      delay(5);
-    }
-  }
-  noTone(SPEAKER_PIN);*/
   delay(500);
 }
 
-/**
-   Get the user's input and compare it with the expected sequence.
-*/
 bool checkUserSequence() {
   for (int i = 0; i < gameIndex; i++) {
     byte expectedButton = gameSequence[i];
@@ -142,23 +123,7 @@ bool checkUserSequence() {
   return true;
 }
 
-/**
-   Plays a hooray sound whenever the user finishes a level
-*/
 void playLevelUpSound() {
-  /*tone(SPEAKER_PIN, NOTE_E4);
-  delay(150);
-  tone(SPEAKER_PIN, NOTE_G4);
-  delay(150);
-  tone(SPEAKER_PIN, NOTE_E5);
-  delay(150);
-  tone(SPEAKER_PIN, NOTE_C5);
-  delay(150);
-  tone(SPEAKER_PIN, NOTE_D5);
-  delay(150);
-  tone(SPEAKER_PIN, NOTE_G5);
-  delay(150);
-  noTone(SPEAKER_PIN);*/
   myDFPlayer.playFolder(2,2);
   delay(1500);
   myDFPlayer.stop();
@@ -166,23 +131,6 @@ void playLevelUpSound() {
 
 void victoria(char* mensaje) {
   Serial.print(mensaje);
-  /*tone(SPEAKER_PIN, NOTE_C4);
-  delay(250);
-  tone(SPEAKER_PIN, NOTE_G3);
-  delay(125);
-  tone(SPEAKER_PIN, NOTE_G3);
-  delay(125);
-  tone(SPEAKER_PIN, NOTE_A3);
-  delay(250);
-  tone(SPEAKER_PIN, NOTE_G3);
-  delay(250);
-  noTone(SPEAKER_PIN);
-  delay(250);
-  tone(SPEAKER_PIN, NOTE_B3);
-  delay(250);
-  tone(SPEAKER_PIN, NOTE_C4);
-  delay(250);
-  noTone(SPEAKER_PIN);*/
   myDFPlayer.playFolder(2,3);
   delay(7500);
   myDFPlayer.stop();
@@ -203,16 +151,14 @@ int selMode(){ //seleccionar el modo de juego
 }
 
 int difficulty(){ //seleccionar dificultad
-  Serial.print("\nSeleccione una dificultad:\n1. Fácil\n2. Regular\n3. Difícil\n4. Imposible\n");
+  Serial.print("\nSeleccione una dificultad:\n1. Fácil\n2. Regular\n3. Difícil\n");
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
-      return 1500;
+      return 1600;
     } else if(digitalRead(buttonPins[1])==LOW){
-      return 500;
+      return 800;
     } else if(digitalRead(buttonPins[2])==LOW){
-      return 100;
-    } else if(digitalRead(buttonPins[3])==LOW){
-      return 50;
+      return 300;
     }
     delay(1);
   }
@@ -307,6 +253,9 @@ bool elegirCancion(int cancion){
 }
 
 void loop(){
+
+  loopAP();
+
   if (modo == 0){
     modo = selMode();
     dif = 10;
