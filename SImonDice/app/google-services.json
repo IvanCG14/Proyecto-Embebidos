@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "688407982186",
+    "firebase_url": "https://simondice-98f40-default-rtdb.firebaseio.com",
+    "project_id": "simondice-98f40",
+    "storage_bucket": "simondice-98f40.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688407982186:android:d21d9cc1e2d3c32cc59a13",
+        "android_client_info": {
+          "package_name": "com.example.simondice"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbiXgZjRej_9razE22YL11YxnRaoeYP5U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

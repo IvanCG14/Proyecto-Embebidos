@@ -4,10 +4,18 @@
 #include <HardwareSerial.h>
 #include "apwifieeprommode.h"
 #include <EEPROM.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SH110X.h>
+
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 128 // OLED display height, in pixels
+#define OLED_RESET -1     // Reset pin (not used)
+Adafruit_SH1107 display = Adafruit_SH1107(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET, 1000000, 100000);
 
 /* Define pin numbers for LEDs, buttons and speaker: */
-int ledPins[] = {13, 12, 26, 27};
-int buttonPins[] = {5, 18, 33, 34};
+int ledPins[] = {13, 14, 26, 33};
+int buttonPins[] = {12, 27, 25, 32};
 #define MAX_GAME_LENGTH 100
 
 const char* opcMalas[] = {
@@ -27,6 +35,18 @@ DFRobotDFPlayerMini myDFPlayer;
 
 void setup(){
   Serial.begin(9600);
+  Wire.begin(21, 22);  // Initialize I2C pins (SDA = 21, SCL = 22)
+
+  // Initialize the display
+  if (!display.begin(0x3C, true)) { // I2C address 0x3C
+    Serial.println(F("OLED initialization failed!"));
+    while (1); // Halt execution if display initialization fails
+  }
+
+  display.display();  // Show initial Adafruit splashscreen
+  delay(1000);        // Pause for 2 seconds
+
+  display.clearDisplay();  // Clear the buffer
 
   intentoconexion("SimonDice", "simondice");
 
@@ -59,6 +79,24 @@ void setup(){
   myDFPlayer.volume(30);  // Ajuste de volumen
 
   randomSeed(analogRead(A3));
+}
+
+void displayMessage(const char *message, int textSize, int cursorX, int cursorY, uint16_t textColor) {
+  display.clearDisplay();         // Clear the display buffer
+  display.setTextSize(textSize);  // Set text size (1 = default size)
+  display.setTextColor(textColor); // Set text color
+  display.setCursor(cursorX, cursorY); // Set cursor position
+  display.println(message);       // Print the message
+  display.display();              // Show the updated buffer on the display
+}
+
+void displayOption(int optionNumber, const char *text, int yPosition) {
+  display.setCursor(0, yPosition);
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.print(optionNumber);
+  display.print(". ");
+  display.println(text);
 }
 
 void lightLedAndPlayTone(byte ledIndex, int t) {
@@ -104,6 +142,8 @@ void gameOver(char* mensaje, bool cond) {
   Serial.print(mensaje);
   if(cond){
     Serial.println(gameIndex - 1);}
+  char* txt = mensaje + (gameIndex-1);
+  displayMessage(txt, 1, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   gameIndex = 0;
   delay(1000);
   myDFPlayer.stop();
@@ -130,14 +170,14 @@ void playLevelUpSound() {
 }
 
 void victoria(char* mensaje) {
-  Serial.print(mensaje);
+  displayMessage(mensaje, 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   myDFPlayer.playFolder(2,3);
   delay(7500);
   myDFPlayer.stop();
 }
 
 int selMode(){ //seleccionar el modo de juego
-  Serial.print("\nSeleccione un modo de juego:\n1. Niveles\n2. Reto\n3. Adivinanza\n");
+  displayMessage("\nSeleccione un modo de juego:\n1. Niveles\n2. Reto\n3. Adivinanza\n", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
       return 1;
@@ -151,7 +191,7 @@ int selMode(){ //seleccionar el modo de juego
 }
 
 int difficulty(){ //seleccionar dificultad
-  Serial.print("\nSeleccione una dificultad:\n1. Fácil\n2. Regular\n3. Difícil\n");
+  displayMessage("\nSeleccione una dificultad:\n1. Fácil\n2. Regular\n3. Difícil\n", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
       return 1600;
@@ -165,7 +205,7 @@ int difficulty(){ //seleccionar dificultad
 }
 
 void salir(){
-  Serial.print("¿Desea volver a intentarlo?:\n1. Seguir\n2. Salir\n");
+  displayMessage("¿Desea volver a intentarlo?:\n1. Seguir\n2. Salir\n", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   while(1){
     if(digitalRead(buttonPins[0])==LOW){
       return;
@@ -178,73 +218,67 @@ void salir(){
 }
 
 int mostrarOpcion(int cancion, int opcion){
-  int a = 100; int b = 100; int c =100; int d = 100;
+  int a = 100, b = 100, c = 100, d = 100;
   delay(100);
 
-  if (opcion==0){
-    Serial.print("1. ");
-    Serial.println(opcCorrectas[cancion]);
+  display.clearDisplay();
+
+  if (opcion == 0) {
+    displayOption(1, opcCorrectas[cancion], 0);
   } else {
-    a = random(0,8);
-    Serial.print("1. ");
-    Serial.println(opcMalas[a]);
-  } 
-  
-  if (opcion==1){
-    Serial.print("2. ");
-    Serial.println(opcCorrectas[cancion]);
-  } else{
-    while (a==b || b==100){
-      b = random(0,8);
-    }
-    Serial.print("2. ");
-    Serial.println(opcMalas[b]);
-  } 
-  
-  if (opcion==2){
-    Serial.print("3. ");
-    Serial.println(opcCorrectas[cancion]);
-  } else{
-    while (c==b || c==100){
-      c = random(0,8);
-    }
-    Serial.print("3. ");
-    Serial.println(opcMalas[c]);
-  } 
-  
-  if (opcion==3){
-    Serial.print("4. ");
-    Serial.println(opcCorrectas[cancion]);
-  } else{
-    while (c==d || d==100){
-      d = random(0,8);
-    }
-    Serial.print("4. ");
-    Serial.println(opcMalas[d]);
-  } 
+    a = random(0, 8);
+    displayOption(1, opcMalas[a], 0);
+  }
 
+  if (opcion == 1) {
+    displayOption(2, opcCorrectas[cancion], 16);
+  } else {
+    while (a == b || b == 100) {
+      b = random(0, 8);
+    }
+    displayOption(2, opcMalas[b], 16);
+  }
+
+  if (opcion == 2) {
+    displayOption(3, opcCorrectas[cancion], 32);
+  } else {
+    while (c == b || c == 100) {
+      c = random(0, 8);
+    }
+    displayOption(3, opcMalas[c], 32);
+  }
+
+  if (opcion == 3) {
+    displayOption(4, opcCorrectas[cancion], 48);
+  } else {
+    while (c == d || d == 100) {
+      d = random(0, 8);
+    }
+    displayOption(4, opcMalas[d], 48);
+  }
+
+  display.display();
   delay(100);
 
-  while(1){
-    if(digitalRead(buttonPins[0])==LOW){
+  while (1) {
+    if (digitalRead(buttonPins[0]) == LOW) {
       return 0;
-    } else if(digitalRead(buttonPins[1])==LOW){
+    } else if (digitalRead(buttonPins[1]) == LOW) {
       return 1;
-    } else if(digitalRead(buttonPins[2])==LOW){
+    } else if (digitalRead(buttonPins[2]) == LOW) {
       return 2;
-    } else if(digitalRead(buttonPins[3])==LOW){
+    } else if (digitalRead(buttonPins[3]) == LOW) {
       return 3;
     }
     delay(1);
   }
-
 }
 
 bool elegirCancion(int cancion){
   myDFPlayer.playFolder(3, (cancion + 1));
   delay(30000);
   myDFPlayer.stop();
-  Serial.print("\n¿Cual cancion es?:\n");
+  displayMessage("\n¿Cual cancion es?:\n", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   int opcion = random(0, 4);
   int respuesta = mostrarOpcion(cancion, opcion);
   delay(100);
@@ -266,7 +300,8 @@ void loop(){
   if(modo==1){
 
     if (dif==10 || gameIndex == 0){
-      Serial.print("\nNiveles de Secuencia\n");
+      displayMessage("Niveles de Secuencia", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
+      delay(2000);
       dif = difficulty();
       delay(1000);
     }
@@ -292,8 +327,8 @@ void loop(){
     }
 
   } else if (modo == 2){ //Segundo modo
-    Serial.print("\nModo Reto\n");
-    delay(1000);
+    displayMessage("Modo Reto", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
+    delay(2000);
     gameIndex = 7;
     for (int i = 0; i < gameIndex; i++) {
       gameSequence[i] = random(0, 4);
@@ -309,8 +344,8 @@ void loop(){
     }
     salir();
   } else if (modo == 3){
-    Serial.print("\nModo de Adivinanzas\n");
-    delay(300);
+    displayMessage("Modo Adivinanza", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
+    delay(2000);
 
     int cancion = random(0, 3);
     if (elegirCancion(cancion)){
