@@ -257,25 +257,29 @@ byte readButtons()
   }
 }
 
-void gameOver(char *mensaje, bool cond)
+void gameOver(char *mensaje, bool cond, int16_t textWidth)
 {
-  delay(1000);
   myDFPlayer.playFolder(2, 1);
   delay(200);
-  display.clearDisplay();              // Clear the display buffer
-  display.setTextSize(2);       // Set text size (1 = default size)
-  display.setTextColor(SH110X_WHITE);     // Set text color
-  display.setCursor(10, 50); // Set cursor position
-  display.print(mensaje);            // Print the message
+  display.clearDisplay();                              // Clear the display buffer
+  display.setTextSize(2);                              // Set text size (1 = default size)
+  display.setTextColor(SH110X_WHITE);                  // Set text color
+  int16_t textHeight = 8 * 2;                          // Height of the text, assuming text size 2 (8 pixels per line)
+
+  // Calculate the position to center the message
+  int16_t xPos = (128 - textWidth) / 2;
+  int16_t yPos = (128 - textHeight) / 2; // Center vertically
+  display.setCursor(xPos, yPos);             // Set cursor position
+  display.print(mensaje);                // Print the message
   if (cond)
   {
     display.print(gameIndex - 1);
   }
-  display.display();  
+  display.display();
   gameIndex = 0;
   delay(1000);
   myDFPlayer.stop();
-  delay(500);
+  delay(1);
 }
 
 bool checkUserSequence()
@@ -374,7 +378,7 @@ int difficulty()
       Serial.print("Error al leer Firebase: ");
       Serial.println(firebaseData.errorReason());
     }
-    delay(1);
+    delay(100);
   }
 
   if (Firebase.setString(firebaseData, "simon_dice/dificultad", "0"))
@@ -438,28 +442,28 @@ void salir()
       Serial.print("Error al leer Firebase: ");
       Serial.println(firebaseData.errorReason());
     }
-    delay(1);
+    delay(100);
   }
 }
 
 int mostrarOpcion(int cancion, int opcion)
 {
   int a = 100, b = 100, c = 100, d = 100;
-  delay(100);
+  delay(1);
 
   if (opcion == 0)
   {
-    displayOption(1, opcCorrectas[cancion], 0);
+    displayOption(1, opcCorrectas[cancion], 16);
   }
   else
   {
     a = random(0, 8);
-    displayOption(1, opcMalas[a], 0);
+    displayOption(1, opcMalas[a], 16);
   }
 
   if (opcion == 1)
   {
-    displayOption(2, opcCorrectas[cancion], 16);
+    displayOption(2, opcCorrectas[cancion], 32);
   }
   else
   {
@@ -467,12 +471,12 @@ int mostrarOpcion(int cancion, int opcion)
     {
       b = random(0, 8);
     }
-    displayOption(2, opcMalas[b], 16);
+    displayOption(2, opcMalas[b], 32);
   }
 
   if (opcion == 2)
   {
-    displayOption(3, opcCorrectas[cancion], 32);
+    displayOption(3, opcCorrectas[cancion], 48);
   }
   else
   {
@@ -480,12 +484,12 @@ int mostrarOpcion(int cancion, int opcion)
     {
       c = random(0, 8);
     }
-    displayOption(3, opcMalas[c], 32);
+    displayOption(3, opcMalas[c], 48);
   }
 
   if (opcion == 3)
   {
-    displayOption(4, opcCorrectas[cancion], 48);
+    displayOption(4, opcCorrectas[cancion], 64);
   }
   else
   {
@@ -493,10 +497,10 @@ int mostrarOpcion(int cancion, int opcion)
     {
       d = random(0, 8);
     }
-    displayOption(4, opcMalas[d], 48);
+    displayOption(4, opcMalas[d], 64);
   }
   display.display();
-  delay(100);
+  delay(1);
 
   while (1)
   {
@@ -516,7 +520,7 @@ int mostrarOpcion(int cancion, int opcion)
     {
       return 3;
     }
-    delay(1);
+    delay(100);
   }
 }
 
@@ -525,10 +529,10 @@ bool elegirCancion(int cancion)
   myDFPlayer.playFolder(3, (cancion + 1));
   delay(10000);
   myDFPlayer.stop();
-  displayMessage("\n¿Cual cancion es?:\n", 1.5, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
+  displayMessage("\n¿Cual cancion es?:\n", 1, 0, 16, SH110X_WHITE); // Larger text at position (10, 50)
   int opcion = random(0, 4);
   int respuesta = mostrarOpcion(cancion, opcion);
-  delay(100);
+  delay(1);
 
   return (opcion == respuesta);
 }
@@ -562,7 +566,7 @@ void loop()
     }
     modo = selMode();
     dif = 10;
-    delay(300);
+    delay(1);
   }
 
   // Add a random color to the end of the sequence
@@ -574,7 +578,7 @@ void loop()
       displayMessage("Modo\nClasico", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
       delay(2000);
       dif = difficulty();
-      delay(1000);
+      delay(100);
     }
 
     gameSequence[gameIndex] = random(0, 4);
@@ -588,7 +592,7 @@ void loop()
     playSequence(dif);
     if (!checkUserSequence())
     {
-      gameOver("Game over!\nyour score: ", 1);
+      gameOver("Game over!\nyour score: ", 1, 24);
       salir();
     }
 
@@ -597,7 +601,7 @@ void loop()
     if (gameIndex > 0)
     {
       playLevelUpSound();
-      delay(300);
+      delay(10);
     }
   }
   else if (modo == 2)
@@ -615,7 +619,7 @@ void loop()
     playSequence(dif);
     if (!checkUserSequence())
     {
-      gameOver("Game over,good luck\nin your next attempt!", 0);
+      gameOver("Game over,\ngood luck\nin your\nnext attempt!", 0, 42);
     }
     else
     {
@@ -626,7 +630,7 @@ void loop()
   else if (modo == 3)
   {
     displayMessage("Modo\nAdivinanza", 2, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
-    delay(1000);
+    delay(2000);
 
     int cancion = random(0, 3);
     if (elegirCancion(cancion))
@@ -635,14 +639,14 @@ void loop()
     }
     else
     {
-      gameOver("Opcion\nequivocada :(", 0);
+      gameOver("Opcion\nequivocada :(", 0, 19);
     }
     salir();
   }
   else if (modo == 4)
   {
     displayMessage("Modo\nPersonalizado\nIngresa secuencia", 2, 10, 50, SH110X_WHITE); // Mensaje en pantalla
-    delay(1000);
+    delay(2000);
 
     // Array para guardar la secuencia de botones
     int secuencia[7] = {0};
@@ -651,10 +655,10 @@ void loop()
     for (int i = 0; i < 7; i++)
     {
       displayMessage("Presione\nun boton", 2, 10, 50, SH110X_WHITE);
-      int botonPresionado = readButtons();       // Obtener la posición del botón presionado
-      secuencia[i] = botonPresionado;            // Guardar en la secuencia
+      int botonPresionado = readButtons();        // Obtener la posición del botón presionado
+      secuencia[i] = botonPresionado;             // Guardar en la secuencia
       lightLedAndPlayTone(botonPresionado, 1000); // Iluminar LED correspondiente y reproducir tono
-      delay(300);                                // Esperar un poco antes de continuar
+      delay(300);                                 // Esperar un poco antes de continuar
     }
 
     // Ahora vamos a almacenar la secuencia en Firebase
@@ -718,7 +722,7 @@ void loop()
 
     for (int i = 0; i < 7; i++)
     {
-      byte botonPresionado = readButtons();      // Obtener la posición del botón presionado
+      byte botonPresionado = readButtons();       // Obtener la posición del botón presionado
       lightLedAndPlayTone(botonPresionado, 1000); // Iluminar LED correspondiente y reproducir tono
 
       if (botonPresionado != secuenciaRecuperada[i])
@@ -732,18 +736,18 @@ void loop()
     if (bvictoria)
     {
       victoria("¡Felicidades, has ganado!"); // Mensaje de victoria
-      delay(1000);                           // Pausa antes de continuar
+      delay(100);                            // Pausa antes de continuar
     }
     else
     {
-      gameOver("¡Juego terminado!", 0); // Mensaje de derrota
+      gameOver("¡Juego terminado!", 0, 17); // Mensaje de derrota
       playLevelUpSound();               // Sonido de derrota
-      delay(1000);                      // Pausa antes de continuar
+      delay(100);                       // Pausa antes de continuar
     }
 
     // Regresar a estado inicial
     gameIndex = 0;
-    
+
     salir();
   }
   if (Firebase.setString(firebaseData, "/simon_dice/dificultad", "0"))
@@ -755,5 +759,5 @@ void loop()
     Serial.println(firebaseData.errorReason());
   }
 
-  delay(1000);
+  delay(1);
 }
