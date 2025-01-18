@@ -1,5 +1,4 @@
 #include "Arduino.h"
-#include "pitches.h"
 #include "DFRobotDFPlayerMini.h"
 #include <HardwareSerial.h>
 #include "apwifieeprommode.h"
@@ -149,6 +148,11 @@ void rotarSentidoHorario()
   velocidad = 1700; // Ajusta según la velocidad deseada
   myServo.writeMicroseconds(velocidad);
 }
+void rotarSentidoAntihorario()
+{
+  velocidad = 1300; // Ajusta según la velocidad deseada
+  myServo.writeMicroseconds(velocidad);
+}
 
 void displayMessage(const char *message, int textSize, int cursorX, int cursorY, uint16_t textColor)
 {
@@ -257,7 +261,7 @@ byte readButtons()
   }
 }
 
-void gameOver(char *mensaje, bool cond, int16_t textWidth)
+void gameOver(char *mensaje, bool cond)
 {
   myDFPlayer.playFolder(2, 1);
   delay(200);
@@ -265,11 +269,7 @@ void gameOver(char *mensaje, bool cond, int16_t textWidth)
   display.setTextSize(2);                              // Set text size (1 = default size)
   display.setTextColor(SH110X_WHITE);                  // Set text color
   int16_t textHeight = 8 * 2;                          // Height of the text, assuming text size 2 (8 pixels per line)
-
-  // Calculate the position to center the message
-  int16_t xPos = (128 - textWidth) / 2;
-  int16_t yPos = (128 - textHeight) / 2; // Center vertically
-  display.setCursor(xPos, yPos);             // Set cursor position
+  display.setCursor(10, 50);             // Set cursor position
   display.print(mensaje);                // Print the message
   if (cond)
   {
@@ -309,10 +309,11 @@ void victoria(char *mensaje)
 {
   displayMessage(mensaje, 1.8, 10, 50, SH110X_WHITE); // Larger text at position (10, 50)
   myDFPlayer.playFolder(2, 3);
-  rotarSentidoHorario();
+  delay(1000);
+  rotarSentidoAntihorario();
   delay(2000);
   detenerServo();
-  delay(5500);
+  delay(4500);
   myDFPlayer.stop();
 }
 int selMode()
@@ -348,7 +349,7 @@ int selMode()
       Serial.println(firebaseData.errorReason());
     }
 
-    delay(100); // Evitar lecturas demasiado rápidas
+    delay(10); // Evitar lecturas demasiado rápidas
   }
 }
 
@@ -378,7 +379,7 @@ int difficulty()
       Serial.print("Error al leer Firebase: ");
       Serial.println(firebaseData.errorReason());
     }
-    delay(100);
+    delay(10);
   }
 
   if (Firebase.setString(firebaseData, "simon_dice/dificultad", "0"))
@@ -442,28 +443,27 @@ void salir()
       Serial.print("Error al leer Firebase: ");
       Serial.println(firebaseData.errorReason());
     }
-    delay(100);
+    delay(10);
   }
 }
 
-int mostrarOpcion(int cancion, int opcion)
+byte mostrarOpcion(int cancion, int opcion)
 {
   int a = 100, b = 100, c = 100, d = 100;
-  delay(1);
 
   if (opcion == 0)
   {
-    displayOption(1, opcCorrectas[cancion], 16);
+    displayOption(1, opcCorrectas[cancion], 32);
   }
   else
   {
     a = random(0, 8);
-    displayOption(1, opcMalas[a], 16);
+    displayOption(1, opcMalas[a], 32);
   }
 
   if (opcion == 1)
   {
-    displayOption(2, opcCorrectas[cancion], 32);
+    displayOption(2, opcCorrectas[cancion], 48);
   }
   else
   {
@@ -471,12 +471,12 @@ int mostrarOpcion(int cancion, int opcion)
     {
       b = random(0, 8);
     }
-    displayOption(2, opcMalas[b], 32);
+    displayOption(2, opcMalas[b], 48);
   }
 
   if (opcion == 2)
   {
-    displayOption(3, opcCorrectas[cancion], 48);
+    displayOption(3, opcCorrectas[cancion], 64);
   }
   else
   {
@@ -484,12 +484,12 @@ int mostrarOpcion(int cancion, int opcion)
     {
       c = random(0, 8);
     }
-    displayOption(3, opcMalas[c], 48);
+    displayOption(3, opcMalas[c], 64);
   }
 
   if (opcion == 3)
   {
-    displayOption(4, opcCorrectas[cancion], 64);
+    displayOption(4, opcCorrectas[cancion], 80);
   }
   else
   {
@@ -497,31 +497,12 @@ int mostrarOpcion(int cancion, int opcion)
     {
       d = random(0, 8);
     }
-    displayOption(4, opcMalas[d], 64);
+    displayOption(4, opcMalas[d], 80);
   }
   display.display();
-  delay(1);
 
-  while (1)
-  {
-    if (digitalRead(buttonPins[0]) == LOW)
-    {
-      return 0;
-    }
-    else if (digitalRead(buttonPins[1]) == LOW)
-    {
-      return 1;
-    }
-    else if (digitalRead(buttonPins[2]) == LOW)
-    {
-      return 2;
-    }
-    else if (digitalRead(buttonPins[3]) == LOW)
-    {
-      return 3;
-    }
-    delay(100);
-  }
+  byte x = readButtons();
+  return x;
 }
 
 bool elegirCancion(int cancion)
@@ -592,7 +573,7 @@ void loop()
     playSequence(dif);
     if (!checkUserSequence())
     {
-      gameOver("Game over!\nyour score: ", 1, 24);
+      gameOver("Game over\nYou score", 1);
       salir();
     }
 
@@ -619,7 +600,7 @@ void loop()
     playSequence(dif);
     if (!checkUserSequence())
     {
-      gameOver("Game over,\ngood luck\nin your\nnext attempt!", 0, 42);
+      gameOver("Game over,\ngood luck\nin your\nnext attempt!", 0);
     }
     else
     {
@@ -639,7 +620,7 @@ void loop()
     }
     else
     {
-      gameOver("Opcion\nequivocada :(", 0, 19);
+      gameOver("Opcion\nequivocada :(", 0);
     }
     salir();
   }
@@ -740,8 +721,7 @@ void loop()
     }
     else
     {
-      gameOver("¡Juego terminado!", 0, 17); // Mensaje de derrota
-      playLevelUpSound();               // Sonido de derrota
+      gameOver("¡Juego\nterminado!", 0); // Mensaje de derrota
       delay(100);                       // Pausa antes de continuar
     }
 
